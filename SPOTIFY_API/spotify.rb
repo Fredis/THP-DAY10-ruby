@@ -70,17 +70,78 @@ def get_user_authorization
 		)
 =end
 
-	puts url = "https://accounts.spotify.com/authorize/?client_id=#{ENV['SPOTIFY_KEY']}&response_type=code&redirect_uri=https://google.com&scope=playlist-modify-public playlist-modify-private"
+	url = "https://accounts.spotify.com/authorize/?client_id=#{ENV['SPOTIFY_KEY']}&response_type=code&redirect_uri=https://example.com/callback&scope=playlist-modify-public playlist-modify-private user-top-read"
+	 
 	
 	#browser = Watir::Browser.new(:firefox)
 	#browser.goto url
 
 end
 
-#Méthode pour créer une playlist Spotify à un utilisateur (s'assure au préalable de l'authentification de l'user via OAuth2)
-def create_a_playlist
-
+#Méthode pour obtenir le token d'authorisation en apportant le code de la callback de la méthode get_user_authorization
+def post_authorization_code
+	authorization_code = "AQDXPwC8DUVCoA7Y7P1iQKAVGkQZnQIwZK102ox_YQ_I06aOol9-yeebDyl13TEyVd1fSKbZwyP8t768XFo6bquXYmN9i1nn8w7dTf7KePTANNlPhcU7inNHZqNjrpRchguqqHzz2IxSmVH7_s4E52AJu4mxQfAi6phiVQRkU9w-1NdX-s9sQQCSzWb48MFpqYHDRydSh7qfYfPM_fZwMIrj_RZPVCYAHxhUYknnNeRZBMNOdyX4AP42SOwy7JZTAQZo4d_t-c5ux1fGWYC5zJl5u_Q"
+	puts authentication = HTTParty.post(
+		"https://accounts.spotify.com/api/token", 
+  	headers: {
+	 		"Authorization": "Basic #{encode}"
+	 	},
+  	body: {
+  		grant_type: "authorization_code",
+  		code: "#{authorization_code}",
+  		redirect_uri: "https://example.com/callback"
+  	}
+	)
+	return authentication["access_token"]
 
 end
 
-puts get_user_authorization
+#Méthode pour créer une plalist pour un utilisateur donné. A noter l'ajout de la méthode "JSON.generate" qui permet de gérer un contenu lisible en JSON.
+def post_create_a_playlist
+
+	get_the_new_token_for_user_modification = post_authorization_code
+
+	puts create_a_playlist_with_a_post = HTTParty.post(
+		"https://api.spotify.com/v1/users/FrediSpotify/playlists",
+		headers: { 
+ 			"Authorization": "Bearer #{get_the_new_token_for_user_modification}",
+		 	"Content-Type": "application/json"
+		 	},
+		body: JSON.generate({
+			name: "Ruby Playlist",
+			public: true
+			})
+		)
+end
+
+#Méthode pour obtenir la totalité des playlists d'un utilisateur.
+def get_user_playlists
+	get_token
+	puts get_playlists = HTTParty.get(
+		"https://api.spotify.com/v1/users/FrediSpotify/playlists",
+		headers: { 
+ 			"Authorization": "Bearer #{@token}",
+		 	"Content-Type": "application/json"
+		 	}
+		)
+end
+
+#Méthode pour ajouter des sons à une playlist donné.
+def add_a_track_to_a_playlist
+	get_the_new_token_for_user_modification =	post_authorization_code
+	playlist_id = "24ihQXhkNnjB0n6yfnVut9"
+
+	puts add_a_track = HTTParty.post(
+		"https://api.spotify.com/v1/playlists/#{playlist_id}/tracks",
+		headers: { 
+ 			"Authorization": "Bearer #{get_the_new_token_for_user_modification}",
+		 	"Content-Type": "application/json"
+		 	},
+		query: {
+			uris: "spotify:track:2lFWyfuXtCN8Sb7cHJILva,spotify:track:6aH3QgooXRmx8k8jzrSm3V"
+			}
+		)
+end
+
+#puts get_user_authorization
+add_a_track_to_a_playlist
